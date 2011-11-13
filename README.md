@@ -38,7 +38,7 @@ Get tweets for a specific search term or tweets of a specific username directly 
 Twig Blog class
 ---------------
 Do you think wordpress is just too much? So do I.
-the kTwigBlog is a ridicusly simple blogging engine that relies on the twig templating system.
+the kTwigBlog is a ridiculously simple blogging engine that relies on the twig templating system.
 
 Resource combiner
 -----------------
