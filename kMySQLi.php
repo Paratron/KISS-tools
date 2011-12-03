@@ -1,42 +1,44 @@
 <?php
 /**
- * Erweitert die MySQLi-Klasse um zusätzliche Funktionen.
- * @author Christian Engel <christian.engel@wearekiss.com>
- * @version 1.31
+ * Extends the MySQLi class with useful functions.
+ * @author Christian Engel <hello@wearekiss.com>
+ * @version 1.4
  */
 class kMySQLi extends mysqli
 {
     var $connected = false;
 
     /**
-     * @var array Will be filled, if used an array of queries on query()
+     * @var array Will be filled, if you pass multiple queries to query()
      */
     var $multi_error = array();
 
     /**
-     * @var Tabellen-Prefix, der vor Tabellennamen gesetzt werden soll, um schnell auch auf anderen Servern zu arbeiten.
+     * @var Prefix to put in front of table names. Useful to make one project re-using the same database for multiple instances.
      */
     public $prefix = 'tbl_';
 
     /**
-     * Konstruktor
+     * Constructor
      *
-     * @param string $host Hostname des MySQL Servers
-     * @param string $user Username des MySQL Servers
-     * @param string $pass Passwort des MySQL Servers
-     * @param string $db Name der zu verwendenden Datenbank
+     * @param string $host Hostname of the MySQL server
+     * @param string $user Username of the  MySQL server
+     * @param string $pass Password of the  MySQL server
+     * @param string $db Name of the database to work with
+     * @param string $prefix (optional) Prefix for table names. Default = 'tbl_'
      */
-    public function __construct($host, $user, $pass, $db)
+    public function __construct($host, $user, $pass, $db, $prefix = 'tbl_')
     {
         parent::__construct($host, $user, $pass, $db);
         if ( ! $this->connect_error)
         {
             $this->connected = TRUE;
         }
+        $this->prefix = $prefix;
     }
 
     /**
-     * Maskiert die Sonderzeichen eines Strings für die MySQL-Übergabe.
+     * Escapes a string for save sql queries.
      * @param string $string
      * @return string
      */
@@ -44,6 +46,15 @@ class kMySQLi extends mysqli
     {
         if(get_magic_quotes_gpc()) $string = stripslashes($string);
         return '\''.$this->real_escape_string($string).'\'';
+    }
+
+    /**
+     * Replaces " $$" with the table prefix.
+     * @param $string
+     * @return void
+     */
+    private function put_prefix($string){
+        return str_replace(' $$', ' '.$this->prefix, $string);
     }
 
     /**
@@ -55,6 +66,7 @@ class kMySQLi extends mysqli
      */
     public function query($sqlQuery)
     {
+        $sqlQuery = $this->put_prefix($sqlQuery);
         if(is_array($sqlQuery)){
             $errors = array();
             $results = array();
@@ -75,18 +87,19 @@ class kMySQLi extends mysqli
     }
 
     /**
-     * Fährt eine Anfrage an die Datenbank und gibt die Insert-ID zurück. (Nicht zur Datenabfrage gedacht).
+     * Makes a database query and returns the insertID - only for insert operations.
      * @param string $sqlQuery
      * @return integer|false
      */
     public function queryInsert($sqlQuery)
     {
+        $sqlQuery = $this->put_prefix($sqlQuery);
         $this->query($sqlQuery);
         if(!$this->error) return $this->insert_id; else return false;
     }
 
     /**
-     * Fährt eine Anfrage an die Datenbank und gibt alle Zeilen zurück.
+     * Makes a database query and returns all rows with all selected columns.
      * @param string $sqlQuery
      * @return array|false
      */
@@ -106,9 +119,9 @@ class kMySQLi extends mysqli
     }
 
     /**
-     * Fährt eine Anfrage an die Datenbank und gibt eine Zeile zurück.
+     * Makes a database query and returns one row with all selected columns.
      * @param string $sqlQuery
-     * @return array|false Assoziatives Array
+     * @return array|false Associative Array
      */
     public function queryRow($sqlQuery)
     {
@@ -121,7 +134,7 @@ class kMySQLi extends mysqli
     }
 
     /**
-     * Fährt eine Anfrage an die Datenbank und gibt einen Wert zurück.
+     * Makes a database query and returns a single value directly.
      * @param string $sqlQuery
      * @return mixed|false
      */
@@ -137,9 +150,9 @@ class kMySQLi extends mysqli
     }
 
     /**
-     * Erzeugt einen String mit SET-Werten für MySQL.
-     * Strings werden automatisch maskiert.
-     * @param array $array Assoziatives Array. Keys werden als Datenbank-Felder genutzt.
+     * Creates a string with SET values for mysql.
+     * Strings will be escaped automatically.
+     * @param array $array Associative Array. Keys will be mapped to database columns.
      * @return string
      */
     function makeSqlSetString($array)
@@ -166,11 +179,11 @@ class kMySQLi extends mysqli
     }
 
     /**
-     * Erzeugt einen String für die Dateneingabe in die Datenbank.
-     * Strings werden automatisch maskiert.
-     * Hat die Fähigkeit fehlende Werte zu interpolieren, wenn Werte im übergebenen Array wiederum Arrays sind.
-     * @param array $array Assoziatives Array
-     * @return string (SPALTEN) VALUES (WERTE)
+     * Creates a string for a database insert.
+     * Strings will be escaped automatically.
+     * Has the ability to interpolate missing values if you submit multidimensional array with differing length.
+     * @param array $array Associative Array
+     * @return string "([COLUMNS]) VALUES ([VALUES])"
      */
     function makeSqlValueString($array)
     {
@@ -227,53 +240,13 @@ class kMySQLi extends mysqli
     }
 
     /**
-     * Erzeugt einen Value-Block aus einem Array.
-     * Strings werden automatisch Maskiert.
-     * Arrays oder Objekte werden ignoriert.
-     * @param array $array Assoziatives Array. Keys werden als Datenbank-Felder genutzt.
-     * @return string
-     */
-    function makeSqlValueString_old($array)
-    {
-        $ausgabe = '';
-        $part1 = '';
-        $part2 = '';
-
-        if(is_array($array))
-        {
-            foreach($array as $key=>$wert)
-            {
-                if($part1 != '')
-                {
-                    $part1 .= ', ';
-                    $part2 .= ', ';
-                }
-                $part1 .= $key;
-
-
-                if(is_int($wert))
-                {
-                    $part2 .= $wert;
-                }
-                else if(is_string($wert))
-                {
-                    $part2 .= $this->escape($wert);
-                }
-            }
-
-            $ausgabe = '($part1) VALUES ($part2)';
-        }
-
-        return $ausgabe;
-    }
-
-    /**
-     * Leert eine Tabelle.
+     * Truncates a table (makes it empty).
      * @param string $tablename
      * @return void
      */
-    function clearTable($tablename){
+    function truncate($tablename){
         $sql = 'TRUNCATE TABLE '.$tablename;
+        $sql = $this->put_prefix($sql);
         $this->query($sql);
     }
 }
