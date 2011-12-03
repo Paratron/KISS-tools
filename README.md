@@ -46,3 +46,7 @@ Rescombine packs several CSS or javascript files together with a simple syntax:
 *http://example.com/rescombine.php?files=file1,file2,file3*
 The files are cached and only taken from a specific directory with a specific file extension. Caching is available. Minification is available.
 Use it with mod_rewrite to make requests beautiful: *http://example.com/file1,file2,file3.css*
+
+SlimRouter
+----------
+A component for the Slim PHP framework which makes your all-day-routing life much easier :)
