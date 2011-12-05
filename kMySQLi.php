@@ -2,7 +2,7 @@
 /**
  * Extends the MySQLi class with useful functions.
  * @author Christian Engel <hello@wearekiss.com>
- * @version 1.4
+ * @version 1.41
  */
 class kMySQLi extends mysqli
 {
@@ -23,13 +23,21 @@ class kMySQLi extends mysqli
      *
      * @param string $host Hostname of the MySQL server
      * @param string $user Username of the  MySQL server
-     * @param string $pass Password of the  MySQL server
-     * @param string $db Name of the database to work with
+     * @param string $password Password of the  MySQL server
+     * @param string $database Name of the database to work with
      * @param string $prefix (optional) Prefix for table names. Default = 'tbl_'
      */
-    public function __construct($host, $user, $pass, $db, $prefix = 'tbl_')
+    public function __construct($host, $user=NULL, $password=NULL, $database=NULL, $prefix = '')
     {
-        parent::__construct($host, $user, $pass, $db);
+        if(is_array($host)){
+            $user = $host['user'];
+            $password = $host['password'];
+            $database = $host['database'];
+            $prefix = @$host['prefix'] || '';
+            $host = $host['host'];
+        }
+
+        parent::__construct($host, $user, $password, $database);
         if ( ! $this->connect_error)
         {
             $this->connected = TRUE;
