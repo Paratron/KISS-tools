@@ -2,7 +2,7 @@
 /**
  * Extends the MySQLi class with useful functions.
  * @author Christian Engel <hello@wearekiss.com>
- * @version 1.41
+ * @version 1.42
  */
 class kMySQLi extends mysqli
 {
@@ -90,8 +90,15 @@ class kMySQLi extends mysqli
         return $result;
     }
 
-    function insert($sqlQuery){
-
+    /**
+     * Processes a query to the database and returns TRUE if one or more result rows are returned. Returns FALSE if no result is returned.
+     * @param string $sqlQuery
+     * @return boolean
+     */
+    function querySuccess($sqlQuery){
+        $result = $this->query($sqlQuery);
+        if($result) return TRUE;
+        return FALSE;
     }
 
     /**
