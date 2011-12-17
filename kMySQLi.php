@@ -86,7 +86,6 @@ class kMySQLi extends mysqli
             return $results;
         }
         $result = parent::query($sqlQuery);
-        if($this->error) echo $this->error;
         return $result;
     }
 
