@@ -180,11 +180,11 @@ class kMySQLi extends mysqli
                 if($ausgabe != '') $ausgabe .= ', ';
                 if(is_int($wert))
                 {
-                    $ausgabe .= $key.'='.$wert;
+                    $ausgabe .= '`'.$key.'`='.$wert;
                 }
                 else
                 {
-                    $ausgabe .= $key.'='.$this->escape($wert);
+                    $ausgabe .= '`'.$key.'`='.$this->escape($wert);
                 }
             }
         }
@@ -247,7 +247,7 @@ class kMySQLi extends mysqli
             $right[] = implode(', ', $work);
         }
 
-        $ausgabe = '('.implode(',', $left).') VALUES ('.implode('), (', $right).')';
+        $ausgabe = '(`'.implode('`,`', $left).'`) VALUES ('.implode('), (', $right).')';
 
 
         return $ausgabe;
