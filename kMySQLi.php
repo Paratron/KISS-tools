@@ -202,54 +202,48 @@ class kMySQLi extends mysqli
     function makeSqlValueString($array)
     {
         $ausgabe = '';
-        $left = array();
-        $right = array();
-        $maxLength = 0;
+        $keys = array();
+        $objects = array();
+        $multi_mode = FALSE;
 
-        //Erstmal vorbereiten.
+        //Fetch all keys.
         foreach($array as $key => $value)
         {
-            $left[] = $key;
             if(is_array($value))
             {
-                if(count($value)-1 > $maxLength) $maxLength = count($value)-1;
+                $multi_mode = TRUE;
+                foreach($value as $k => $v){
+                    if(!in_array($k, $keys)) $keys[] = $k;
+                }
             }
             else
             {
-                $array[$key] = array($value);
+                $multi_mode = FALSE;
+                $keys[] = $key;
             }
         }
 
-        //Jetzt die Wertepaare basteln.
-        for($i = 0;$i <= $maxLength;$i++)
-        {
-            $work = array();
-            foreach($array as $key => $value)
-            {
-                if(count($array[$key])-1 < $i)
-                {
-                    $wert = $array[$key][count($array[$key])-1];
+        //Now collect (and interpolate if necessary) all objects
+        if($multi_mode){
+            foreach($array as $v){
+                $obj = array();
+                foreach($keys as $k){
+                    $obj[] = (isset($v[$k])) ? (is_numeric($v[$k])) ? $v[$k]+0 : $this->escape($v[$k]) : $this->escape('');
                 }
-                else
-                {
-                    $wert = $array[$key][$i];
-                }
-
-                if(is_int($wert))
-                {
-                    $work[] = $wert;
-                }
-                else
-                {
-                    $work[] = $this->escape($wert);
-                }
+                $objects[] = implode(', ', $obj);
             }
-            $right[] = implode(', ', $work);
+        } else {
+            $obj = array();
+            foreach($keys as $k){
+                $obj[] = (is_numeric($array[$k])) ? $array[$k]+0 : $this->escape($array[$k]);
+            }
+            $objects[] = implode(', ', $obj);
         }
 
-        $ausgabe = '(`'.implode('`,`', $left).'`) VALUES ('.implode('), (', $right).')';
+        $ausgabe = '(`'.implode('`,`', $keys).
+                   '`) VALUES ('.implode('), (', $objects).')';
 
-
+        
         return $ausgabe;
     }
 
