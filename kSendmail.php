@@ -1,50 +1,52 @@
 <? 
 /**
- * Klasse zum Versenden von E-Mails mit UTF-8 Zeichensatz via PHP.
- * Neu in Version 1.3: Versand über einen SMTP Server. - Benötigt PEAR::Mail
- * Neu in Version 1.4: 8bit encoding wird ohne imap_8bit() durchgeführt.
- * @author Christian Engel
+ * kSendMail
+ * =========
+ * Class to send E-Mails in UTF8-Charset with PHP.
+ * New in Version 1.3: Optional sending via an SMTP Server. - Depends on PEAR::Mail
+ * New in Version 1.4: 8bit encoding is applied without imap_8bit().
+ * @author Christian Engel <hello@wearekiss.com>
  * @version 1.4
  *
  */
 class kSendmail
 {
     /**
-     * @var string Mails einzeln an Absender zustellen.
+     * @var string Send mails to recipients separately.
      */
     const MAIL_SEPERATE = "SEPERATE";
     /**
-     * @var Eine Mail mit zusammengefassten (für die Anderen sichtbaren) Empfängern verschicken.
+     * @var Send ONE mail containing all addresses of all recipients.
      */
     const MAIL_TOGETHER = "TOGETHER";
     
     /**
-     * @var Objekt für SMTP-Versand
+     * @var Object for SMTP transfer
      */
     private $smtpObject = null;
     
     /**
-     * @var string Absender-Mailadresse
+     * @var string Sender address
      */
     private $sender = "";
     /**
-     * @var array Empfänger-Mailadressen
+     * @var array Recipients addresses
      */
     private $recievers = array();
     private $bcc = array();
     private $cc = array();
     /**
-     * @var array Liste mit Pfaden für Dateianhänge.
+     * @var array List with paths to attachments
      */
     private $attachments = array();
     /**
-     * @var Soll nach jeder Mail ein kurzer Report ausgegeben werden?
+     * @var Should a short report be printed out after each sent mail?
      */
     private $varShowReport = false;
     
     /**
-     * Konstruktor
-     * Setzt die Absender-Adresse.
+     * Constructor
+     * Sets the sender address.
      * @param $send_address
      */
     function __constructor($send_address)
@@ -53,7 +55,7 @@ class kSendmail
     }
     
     /**
-     * Aktiviert den SMTP Versand.
+     * Activates SMTP transfer.
      * @param string $host
      * @param string $username
      * @param string $password
@@ -73,20 +75,19 @@ class kSendmail
     }
     
     /**
-     * Überschreibt die im Konstruktor angebene Absenderadresse.
+     * Sets a new sender address.
      * @param string $send_address
      */
     function setSender($send_address)
     {
         $this->sender = $send_address;
-        echo $this->sender;
     }
     
     /**
-     * Fügt einen neuen Empfänger hinzu.
-     * @param string $reciever Mailadresse des Empfängers
-     * @param string $mode Von welchem Typ soll der Empfänger sein?
-     * Leer = Normaler Einzelempfänger.
+     * Adds a new recipient.
+     * @param string $reciever Mail address of the recipient
+     * @param string $mode What mode should the recipient get?
+     * empty (default) = Normal single recipient.
      * BCC	= Blind Carbon-Copy
      * CC	= Carbon-Copy
      * @return boolean
@@ -113,12 +114,12 @@ class kSendmail
     }
     
     /**
-     * Leert die Empfängerliste
-     * @param string[optional] Welche Empfänger sollen geleert werden?
-     * Leer = Normale Empfänger
+     * Flushes the list of recipients.
+     * @param string[optional] Which recipients should be cleared?
+     * Leer = Normal single recipients
      * CC = Carbon Copy
      * BCC = Blind Carbon Copy
-     * * = Alle (default)
+     * * = All (default)
      */
     function clearRecievers($type = "*")
     {
@@ -140,7 +141,7 @@ class kSendmail
     }
     
     /**
-     * Legt fest, ob ein Report nach dem Senden einer Mail angezeigt werden soll, oder nicht.
+     * Defines if a report should be printed after a mail was sent, or not.
      * @param boolean $yesno
      */
     function showReport($yesno)
@@ -149,10 +150,10 @@ class kSendmail
     }
     
     /**
-     * Versendet eine standard Textmail.
+     * Sends a mail.
      * @param string $subject
      * @param string $text
-     * @param string $mode Soll eine Mail mit allen Empfängern zusammengefasst verschickt werden, oder seperate Mails an jeden einzelnen Empfänger?
+     * @param string $mode Should one mail be sent to all recipients (combined addresses), or a separate one to every recipient (default).
      * @param string $type plain oder html
      * @return boolean
      */
@@ -175,7 +176,7 @@ class kSendmail
                     $headers["From"] = $this->sender;
                     if ($cnt == 1)
                     {
-                        //BCCs und CCs anhängen.
+                        //Append BCCs und CCs.
                         if (count($this->bcc) > 0)
                             $headers["Bcc"] = implode(",".$this->bcc);
                         if (count($this->cc) > 0)
@@ -203,7 +204,7 @@ class kSendmail
                         mail($r, "=?UTF-8?Q?".$this->quoted_printable_encode($subject)."?=", $totalText, $header);
                     }
                     if ($this->varShowReport)
-                        echo "Bericht: <br />".$r."<br />".$subject."<br />".$text."<br />".$header."<br />".count($this->attachments)." Anh�nge.";
+                        echo "Report: <br />".$r."<br />".$subject."<br />".$text."<br />".$header."<br />".count($this->attachments)." Attachments.";
                 }
             }
             else
@@ -244,7 +245,7 @@ class kSendmail
                 }
                 
                 if ($this->varShowReport)
-                    echo "Bericht: <br />".$r."<br />".$subject."<br />".$text."<br />".$header."<br />".count($this->attachments)." Anh�nge.";
+                    echo "Report: <br />".$r."<br />".$subject."<br />".$text."<br />".$header."<br />".count($this->attachments)." Anhänge.";
             }
             
             return true;
@@ -254,7 +255,7 @@ class kSendmail
     }
     
     /**
-     * Bereitet die hinzugefügten Attachments für den Mailversand auf.
+     * Prepares the attachments for shipment.
      */
     private function setAttachments()
     {
@@ -276,9 +277,9 @@ class kSendmail
     }
     
     /**
-     * Fügt eine Datei als Attachment hinzu. Es wird gepfüft ob die Datei existiert.
-     * @param string $source_filename Quellpfad zur Datei
-     * @param string $target_filename [optional] Neuer Dateiname im Anhang
+     * Adds a file as attachment. Checks if the file exists.
+     * @param string $source_filename Path to the file.
+     * @param string $target_filename [optional] New attachment filename
      * @return boolean
      */
     function addAttachment($source_filename, $target_filename = NULL)
@@ -294,8 +295,8 @@ class kSendmail
     }
     
     /**
-     * Entfernt alle Attachments von der Mail.
-     * Dateien werden NICHT physikalisch gelöscht!
+     * Removes all attachments.
+     * Files WONT be deleted physically!
      */
     function clearAttachments()
     {
@@ -303,7 +304,7 @@ class kSendmail
     }
     
     /**
-     * Prüft, ob eine Mailadresse syntaktisch korrekt ist.
+     * Checks if a mail address is syntactically correct.
      * @param string $mailAddress
      * @return boolean
      */
@@ -313,7 +314,7 @@ class kSendmail
     }
     
     /**
-     * Encodiert einen String im 8Bit format.
+     * Encodes a string in 8Bit format.
      * @param string $sText
      * @param boolean $bEmulate_imap_8bit [optional]
      * @return string
