@@ -144,7 +144,7 @@ class kMySQLi extends mysqli
         {
             return $result->fetch_assoc();
         }
-        else return false;
+        else return FALSE;
     }
 
     /**
@@ -160,7 +160,24 @@ class kMySQLi extends mysqli
             $row = $result->fetch_array();
             return $row[0];
         }
-        else return false;
+        else return FALSE;
+    }
+
+    /**
+     * Makes a database query, and returns the first value of each row in a new array.
+     * @param string $sqlQuery
+     * @return array|false
+     */
+    public function queryAllValue($sqlQuery){
+        $result = $this->query($sqlQuery);
+        if($result){
+            $out = array();
+            while($row = $result->fetch_array()){
+                $out[] = $row[0];
+            }
+            return $out;
+        }
+        return FALSE;
     }
 
     /**
