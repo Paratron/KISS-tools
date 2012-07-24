@@ -8,6 +8,8 @@ class kMySQLi extends mysqli
 {
     var $connected = false;
 
+    var $last_query = '';
+
     /**
      * @var array Will be filled, if you pass multiple queries to query()
      */
@@ -33,7 +35,7 @@ class kMySQLi extends mysqli
             $user = $host['user'];
             $password = $host['password'];
             $database = $host['database'];
-            $prefix = @$host['prefix'] || '';
+            $prefix = (isset($host['prefix'])) ? $host['prefix'] : '';
             $host = $host['host'];
         }
 
@@ -85,8 +87,19 @@ class kMySQLi extends mysqli
             $this->multi_error = $errors;
             return $results;
         }
+        $this->last_query = $sqlQuery;
         $result = parent::query($sqlQuery);
         return $result;
+    }
+
+    /**
+     * Performs a MySQL Query and returns the number of affected rows.
+     * @param $sqlQuery
+     * @return int
+     */
+    function queryAffect($sqlQuery){
+        $this->query($sqlQuery);
+        return $this->affected_rows;
     }
 
     /**
