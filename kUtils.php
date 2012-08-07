@@ -28,7 +28,7 @@ class kUtils{
 * trim 				For use with string. Will remove whitespaces at the beginning and end of the string.
 * set|a,b,c,...		Will only preserve the value if its in the given set of values. Otherwise, value will become NULL
 * limit|10			Will cut the value after X characters (strings or integers)
-* range|1,10		For use with integer. Will only preserve the value, if its in the given range. Otherwise it becomes NULL 
+* range|1,10		For use with integer. Will only preserve the value, if its in the given range. Otherwise it becomes NULL
 *
 * NOTE: You can create recursive array maps, if you want to:
 *
@@ -42,6 +42,21 @@ class kUtils{
 *    		'twitter' => 'url'
 *    	)
 *     );
+*
+* The special key "{{repeat}}":
+* The array_map function enables you to map arrays of repeating objects as well.
+*
+* $map = array(
+*    'users' => array(
+*       '{{repeat}}' => 0,
+*       'first_name' => 'string|trim',
+*       'last_name' => 'string|trim'
+*    );
+* );
+*
+* The special "{{repeat}}" key tells array_map that you await "users" to be an array containing multiple objects
+* with a "first_name" and "last_name" property.
+* Set "{{repeat}}" to any integer > 0 to limit the amount of objects in that array.
 *
 * @param array $input
 * @param array $map
@@ -63,8 +78,23 @@ function array_map($input, $map, $objectify = FALSE)
 		}
 
 		if (is_array($v)) {
-            //Mapping an Object	
-			$value = $this->array_map($value, $v);
+            //Mapping an Object
+			if(isset($v['{{repeat}}'])){
+				$max = (int)$v['{{repeat}}'];
+				if($v['{{repeat}}'] === TRUE) $max = 0;
+
+				unset($v['{{repeat}}']);
+				$subresult = array();
+				$cnt = 0;
+				foreach($value as $val){
+					$cnt++;
+					if($max && $cnt > $max) break;
+					$subresult[] = $this->array_map($val, $v);
+				}
+				$value = $subresult;
+			} else {
+				$value = $this->array_map($value, $v);
+			}
 		} else {
                     //Normal mapping
 			$p = explode('|', $v);
@@ -151,34 +181,34 @@ function array_map($input, $map, $objectify = FALSE)
 	}
 
 	/**
-     * Returns a new array where the value from given field from the input array is used as the key.
-     * This function is mainly used to make the id of a dataset the array key.
-     *
-     * Example:
-     * $in = array(
-     *      array('id' => 1, 'title' => 'peter'),
-     *      array('id' => 2, 'title' => 'paul'),
-     *      array('id' => 3, 'title' => 'mary'),
-     * );
-     * $out = array_id_to_key($in);
-     * $out = array(
-     *      '1' => array('id' => 1, 'title' => 'peter'),
-     *      '2' => array('id' => 2, 'title' => 'paul'),
-     *      '3' => array('id' => 3, 'title' => 'mary'),
-     * );
-     * @param array $array
-     * @param string $key_field
-     * @return array
-     */
-    function array_id_to_key($array, $key_field = 'id')
-    {
-        $result = array();
-        foreach ($array as $v) {
-            $result[$v[$key_field]] = $v;
-        }
+	 * Returns a new array where the value from given field from the input array is used as the key.
+	 * This function is mainly used to make the id of a dataset the array key.
+	 *
+	 * Example:
+	 * $in = array(
+	 *      array('id' => 1, 'title' => 'peter'),
+	 *      array('id' => 2, 'title' => 'paul'),
+	 *      array('id' => 3, 'title' => 'mary'),
+	 * );
+	 * $out = array_id_to_key($in);
+	 * $out = array(
+	 *      '1' => array('id' => 1, 'title' => 'peter'),
+	 *      '2' => array('id' => 2, 'title' => 'paul'),
+	 *      '3' => array('id' => 3, 'title' => 'mary'),
+	 * );
+	 * @param array $array
+	 * @param string $key_field
+	 * @return array
+	 */
+	function array_id_to_key($array, $key_field = 'id')
+	{
+		$result = array();
+		foreach ($array as $v) {
+			$result[$v[$key_field]] = $v;
+		}
 
-        return $result;
-    }
+		return $result;
+	}
 
     /**
      * Will sort a multidimensional array by the values of a specific key.
@@ -190,26 +220,26 @@ function array_map($input, $map, $objectify = FALSE)
      * @return array
      */
     function array_sort_by_key($array, $key){
-        if(!is_array($key)) $key = array($key);
+    	if(!is_array($key)) $key = array($key);
 
-        $this->sortkey = $key;
-        uasort($array, array($this, 'cmp'));
-        return $array;
+    	$this->sortkey = $key;
+    	uasort($array, array($this, 'cmp'));
+    	return $array;
     }
 
     private $sortkey;
 
     function cmp($a, $b){
-        foreach($this->sortkey as $v){
-            $f = substr($v, 0, 1);
-            if($f == '+' || $f == '-') $v = substr($v, 1);
-            if($a[$v] == $b[$v]) continue;
-            if($f == '-'){
-                return ($a[$v] > $b[$v]) ? -1 : 1;
-            } else {
-                return ($a[$v] < $b[$v]) ? -1 : 1;
-            }
-        }
-        return 0;
+    	foreach($this->sortkey as $v){
+    		$f = substr($v, 0, 1);
+    		if($f == '+' || $f == '-') $v = substr($v, 1);
+    		if($a[$v] == $b[$v]) continue;
+    		if($f == '-'){
+    			return ($a[$v] > $b[$v]) ? -1 : 1;
+    		} else {
+    			return ($a[$v] < $b[$v]) ? -1 : 1;
+    		}
+    	}
+    	return 0;
     }
 }
