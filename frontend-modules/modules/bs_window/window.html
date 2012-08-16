@@ -1,0 +1,18 @@
+<div class="modal fade" style="width:<%= width %>px;margin-left:-<%= (width / 2) %>px">
+    <div class="modal-header<%= (show_header) ? '' : ' hide' %>">
+        <button type="button" data-close="1" class="close<%= (close_title) ? '' : ' hide' %>">&times;</button>
+        <h3><%= title %></h3>
+    </div>
+    <div class="modal-body">
+        <%= template %>
+    </div>
+    <div class="modal-footer<%= (show_footer) ? '' : ' hide' %>">
+        <%= buttons %>
+        <div class="alert alert-error error" style="float:left;margin-bottom:0;padding-top:4px;padding-bottom:4px;padding-right:14px;display:none;">
+          <i class="icon-warning-sign"></i> <span class="error-content"></span>
+        </div>
+        <div class="alert alert-info spinner" style="float:left;margin-bottom:0;padding-top:4px;padding-bottom:4px;padding-right:14px;display:none;background:#fff;">
+            <i class="icon-warning-sign" style="background:url(lib/img/ajax-loader.gif) center no-repeat;"></i> <span class="spinner-content"></span>
+        </div>
+    </div>
+</div>
