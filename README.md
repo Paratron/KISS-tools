@@ -10,6 +10,17 @@ These little fellas are ticking in the back of our web-apps and support them wit
 
 These are the contents of the kiss toolset so far:
 
+Frontend
+========
+
+bs_window.js
+------------
+This AMD module depending on twitter bootstrap v2 brings you great window functionality to your project.
+
+
+PHP
+===
+
 CacheFly
 --------
 The cachefly class was designed quite a while ago to provide a simple way to add caching to already existing projects.
@@ -26,6 +37,10 @@ Use this class to easily collect data about your current visitor.
 Which OS is he using? Whats his preferred language? Whats the best matching language that I support?
 With this class, your information is just a function call away.
 
+Sendmail Class
+--------------
+Sending E-Mails with PHP can be a real pain. This class takes the most weight off your shoulders and makes it really easy to send e-mails with PHP.
+
 Unit testing class
 ------------------
 Enables you to write unit tests in a totally easy way. The tests are groupable and the class renders the results in beautiful HTML5.
@@ -39,6 +54,15 @@ Twig Blog class
 ---------------
 Do you think wordpress is just too much? So do I.
 the kTwigBlog is a ridiculously simple blogging engine that relies on the twig templating system.
+
+kUtils class
+------------
+The kUtils class brings you some useful functions which are missing in PHP.    
+Currently containing:
+
+* array_map - A method to filter arrays and typecast their values. VERY useful for sanitizing user input.
+* array_id_to_key - A method which takes a field of a multidimensional array and turns it into the array key for fast queries.
+* array_sort_by_key - A method which can sort an multidimensional array by a value of a field.
 
 Resource combiner
 -----------------
