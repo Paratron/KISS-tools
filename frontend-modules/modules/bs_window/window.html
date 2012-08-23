@@ -1,4 +1,4 @@
-<div class="modal fade" style="width:<%= width %>px;margin-left:-<%= (width / 2) %>px">
+<div class="modal fade <%= window_class %>" style="width:<%= width %>px;margin-left:-<%= (width / 2) %>px">
     <div class="modal-header<%= (show_header) ? '' : ' hide' %>">
         <button type="button" data-close="1" class="close<%= (close_title) ? '' : ' hide' %>">&times;</button>
         <h3><%= title %></h3>
