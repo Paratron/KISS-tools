@@ -68,6 +68,7 @@ define(['text!./bs_window/window.html', 'text!./bs_window/window-button.html'], 
         show_footer:true,
         width:580,
         height_limit: 400,
+        zindex: 0,
         buttons:[
             {
                 id:null,
@@ -170,6 +171,7 @@ define(['text!./bs_window/window.html', 'text!./bs_window/window-button.html'], 
         //===============End of Listeners=============
 
 
+        var bkdrp;
         var obj = {
             /**
              * Reference to the jQuery enhanced window DOM object to mess around with.
@@ -187,11 +189,18 @@ define(['text!./bs_window/window.html', 'text!./bs_window/window-button.html'], 
                     do_show = true;
                     return;
                 }
+                if(params.zindex){
+                    DOM_el.css('z-index', params.zindex + 10);
+                }
                 DOM_el.modal('show');
                 if (params.backdrop) {
-                    $('body').append($('<div class="modal-backdrop fade in"></div>').fadeIn());
+                    bkdrp = $('<div class="modal-backdrop fade in"></div>');
+                    $('body').append(bkdrp.fadeIn());
                     if (params.close_on_backdrop) {
-                        $('.modal-backdrop').click(function () {
+                        if(params.zindex){
+                            bkdrp.css('z-index', params.zindex);
+                        }
+                        bkdrp.click(function () {
                             if (params.before_close() === false) return;
                             obj.hide();
                         });
@@ -205,7 +214,7 @@ define(['text!./bs_window/window.html', 'text!./bs_window/window-button.html'], 
             hide:function () {
                 DOM_el.modal('hide');
                 if (params.backdrop) {
-                    $('.modal-backdrop').fadeOut(function () {
+                    bkdrp.fadeOut(function () {
                         $(this).remove();
                     });
                 }
@@ -261,6 +270,22 @@ define(['text!./bs_window/window.html', 'text!./bs_window/window-button.html'], 
              */
             set_button:function (id, params) {
 
+            },
+
+            /**
+             * Enables a action button for user interaction.
+             * @param id
+             */
+            enable_button: function(id){
+                $('.modal-footer .btn[data-id=' + id + ']').removeClass('disabled');
+            },
+
+            /**
+             * Disables a action button for user interaction.
+             * @param id
+             */
+            disable_button: function(id){
+                $('.modal-footer .btn[data-id=' + id + ']').addClass('disabled');
             },
             /**
              * This will reset all form elements in the window content to their default values.
