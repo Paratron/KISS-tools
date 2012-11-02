@@ -63,6 +63,7 @@ Currently containing:
 * array_map - A method to filter arrays and typecast their values. VERY useful for sanitizing user input.
 * array_id_to_key - A method which takes a field of a multidimensional array and turns it into the array key for fast queries.
 * array_sort_by_key - A method which can sort an multidimensional array by a value of a field.
+* template - Parses simple, mustache-like template strings.
 
 Resource combiner
 -----------------
