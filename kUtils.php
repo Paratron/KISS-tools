@@ -30,8 +30,12 @@ class kUtils {
      * Available actions:
      * trim                 For use with string. Will remove whitespaces at the beginning and end of the string.
      * set|a,b,c,...        Will only preserve the value if its in the given set of values. Otherwise, value will become NULL
-     * limit|10            Will cut the value after X characters (strings or integers)
-     * range|1,10        For use with integer. Will only preserve the value, if its in the given range. Otherwise it becomes NULL
+     * limit|10             Will cut the value after X characters (strings or integers)
+     * range|1,10           For use with integer. Will only preserve the value, if its in the given range. Otherwise it becomes NULL
+     *
+     * Special actions:
+     * boolcast|TRUEVALUE   Can be used with the data type "bool/boolean" to set the value to TRUE on the given value, FALSE on any other value.
+     * intcast              Can be used with the data type "array" to cast all array values to an integer.
      *
      * NOTE: You can create recursive array maps, if you want to:
      *
@@ -107,6 +111,12 @@ class kUtils {
                 else {
                     $value = $this->array_map($value, $v);
                 }
+
+                if($action == 'intcast'){
+                    foreach($value as $k => $v){
+                        $value[$k] = (int)$v;
+                    }
+                }
             }
             else {
                 //Normal mapping
@@ -118,6 +128,10 @@ class kUtils {
                 switch ($format) {
                     case 'bool':
                     case 'boolean':
+                        if($action == 'boolcast'){
+                            if($value == $info) $value = TRUE; else $value = FALSE;
+                        }
+
                         if (strtolower($value) == 'true' || $value == 1) {
                             $value = TRUE;
                         }
@@ -131,6 +145,17 @@ class kUtils {
                         $value = (string)$value;
                         if ($action == 'trim') {
                             $value = trim($value);
+                        }
+                        if ($action == 'expect_length') {
+                            if (strlen($value) != $info) {
+                                $value = NULL;
+                            }
+                        }
+                        if ($action == 'striptags') {
+                            $value = strip_tags($value);
+                        }
+                        if ($action == 'htmlentities') {
+                            $value = htmlentities($value);
                         }
                         break;
                     case 'int':
@@ -155,7 +180,7 @@ class kUtils {
                     case 'email':
                     case 'mail':
                         $value = (string)$value;
-                        if (preg_match('/^([\+a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,4})+$/', $value) === 0) {
+                        if (preg_match('/^([\+a-zA-Z0-9_.+-])+@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/', $value) === 0) {
                             $value = NULL;
                         }
                         break;
@@ -328,7 +353,7 @@ class kUtils {
      * @param {Array} $template_data Associative (key/value) Array with replacement data
      * @return {String}
      */
-    function template($template_string, $template_data) {
+    function template($template_string, $template_data = array()) {
 
         foreach ($template_data as $k => $v) {
             $template_string = str_replace('{{' . $k . '}}', $v, $template_string);
@@ -338,5 +363,22 @@ class kUtils {
         $template_string = preg_replace('#\{\{.+?\}\}#ms', '', $template_string);
 
         return $template_string;
+    }
+
+    /**
+     * Returns a hashed password. String Length: 72 characters.
+     * @param {Sting} $inString
+     * @param {String} $salt (optional)
+     * @return {String}
+     */
+    function hash_password($password, $salt = '') {
+        if (!$salt) {
+            $salt = substr(md5(uniqid('')), 0, 8);
+        }
+        else {
+            $salt = substr($salt, 0, 8);
+        }
+
+        return $salt . hash('sha256', $salt . $password);
     }
 }
