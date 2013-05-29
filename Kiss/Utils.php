@@ -453,4 +453,40 @@ class Utils {
 
         return $result_str;
     }
+
+    /**
+     * Takes a image path, crops (from center) and rescales the image so it fits into the new bounds,
+     * then saves the new image in a temporary path that is then returned.
+     * @param {String} $inputImagePath
+     * @param {Integer} $targetWidth
+     * @param {Integer} $targetHeight
+     * @return {String} Temporary path to the cropped and resized image
+     */
+    public static function cropAndScale($inputImagePath, $targetWidth, $targetHeight) {
+        $origDims = getimagesize($inputImagePath);
+
+        $sourceImage = imagecreatefromstring(file_get_contents($inputImagePath));
+
+        $targetImage = imagecreatetruecolor($targetWidth, $targetHeight);
+
+        if ($targetHeight > $targetWidth) {
+            //Landscape format
+            $srcY = 0;
+            $srcH = $origDims[1];
+            $srcW = $srcH * ($targetWidth / $targetHeight);
+            $srcX = ($origDims[0] - $srcW) / 2;
+        }
+        else {
+            //Portrait or square
+            $srcX = 0;
+            $srcW = $origDims[0];
+            $srcH = $srcW * ($targetWidth / $targetHeight);
+            $srcY = ($origDims[1] - $srcH) / 2;
+        }
+        imagecopyresampled($targetImage, $sourceImage, 0, 0, $srcX, $srcY, $targetWidth, $targetHeight, $srcW, $srcH);
+
+        $tmp = 'lib/people/temp.tmp'; //Whatever, doesnt work...> tempnam(sys_get_temp_dir(), 'img');
+        imagejpeg($targetImage, $tmp, 90);
+        return $tmp;
+    }
 }
