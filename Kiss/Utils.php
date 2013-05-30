@@ -462,14 +462,14 @@ class Utils {
      * @param {Integer} $targetHeight
      * @return {String} Temporary path to the cropped and resized image
      */
-    public static function cropAndScale($inputImagePath, $targetWidth, $targetHeight) {
+    function cropAndScale($inputImagePath, $targetWidth, $targetHeight) {
         $origDims = getimagesize($inputImagePath);
 
         $sourceImage = imagecreatefromstring(file_get_contents($inputImagePath));
 
         $targetImage = imagecreatetruecolor($targetWidth, $targetHeight);
 
-        if ($targetHeight > $targetWidth) {
+        if ($origDims[0] > $origDims[1]) {
             //Landscape format
             $srcY = 0;
             $srcH = $origDims[1];
@@ -479,13 +479,13 @@ class Utils {
         else {
             //Portrait or square
             $srcX = 0;
-            $srcW = $origDims[0];
-            $srcH = $srcW * ($targetWidth / $targetHeight);
+            $srcW = min($origDims[0], $origDims[0] * ($targetWidth / $targetHeight));
+            $srcH = $srcW * ($targetHeight / $targetWidth);
             $srcY = ($origDims[1] - $srcH) / 2;
         }
         imagecopyresampled($targetImage, $sourceImage, 0, 0, $srcX, $srcY, $targetWidth, $targetHeight, $srcW, $srcH);
 
-        $tmp = 'lib/people/temp.tmp'; //Whatever, doesnt work...> tempnam(sys_get_temp_dir(), 'img');
+        $tmp = tempnam(sys_get_temp_dir(), 'img');
         imagejpeg($targetImage, $tmp, 90);
         return $tmp;
     }
