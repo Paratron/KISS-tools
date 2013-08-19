@@ -7,7 +7,7 @@
  * Changelog
  * v2: Added subfolder crawling and fuzzy match support.
  *
- * @autor Christian Engel <christian.engel@wearekiss.com>
+ * @autor Christian Engel <hello@wearekiss.com>
  * @version 2 19.01.2012
  * @version 1 13.11.2011
  */
