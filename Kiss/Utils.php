@@ -189,14 +189,14 @@ class Utils {
                         break;
                     case 'url':
                         $value = (string)$value;
-                        if (preg_match('/(http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:\/~\+#]*[\w\-\@?^=%&amp;\/~\+#])?/', $value) === 0) {
+                        if (!self::is_url($value)) {
                             $value = NULL;
                         }
                         break;
                     case 'email':
                     case 'mail':
                         $value = (string)$value;
-                        if (preg_match('/^([\+a-zA-Z0-9_.+-])+@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/', $value) === 0) {
+                        if (!self::is_mail($value)) {
                             $value = NULL;
                         }
                         break;
@@ -293,7 +293,7 @@ class Utils {
      * @param bool $objectify
      * @return array|mixed
      */
-    public static function array_map($input, $map, $objectify = FALSE){
+    public static function array_map($input, $map, $objectify = FALSE) {
         return self::array_clean($input, $map, $objectify);
     }
 
@@ -304,6 +304,10 @@ class Utils {
      */
     public static function is_mail($value) {
         return (preg_match('/^([\+a-zA-Z0-9_.+-])+@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/', $value) !== 0);
+    }
+
+    public static function is_url($value) {
+        return (preg_match('/(http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:\/~\+#]*[\w\-\@?^=%&amp;\/~\+#])?/', $value) === 0);
     }
 
     /**
