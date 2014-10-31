@@ -18,6 +18,13 @@ class Utils {
      * Add all keys you want to preserve from the input array and apply the desired data type/format and actions.
      * In our example, the command "string|trim" converts the value into a string, and applies a trim.
      *
+     * If you want to remap keys to other keys, do it like this:
+     *
+     *      $map = array(
+     *         'key>otherKey' => 'string|trim',
+     *         'another-key > anotherKey' => 'string|trim' //For better readability, you can add spaces around the arrow.
+     *     );
+     *
      * Avaliable data types:
      * string   Convert the value into a string
      * integer  Convert the value into an integer
@@ -67,12 +74,15 @@ class Utils {
      * with a "first_name" and "last_name" property.
      * Set "{{repeat}}" to any integer > 0 to limit the amount of objects in that array.
      *
-     * @param {Array} $input
-     * @param {Array} $map
-     * @param {Bool} $objectify (optional) Returns an Object, instead of an associative array. default = false
-     * @return {Array|Object}
+     * @param $input
+     * @param $map
+     * @param bool $objectify
+     * @internal param $ {Array} $input $input
+     * @internal param $ {Array} $map $map
+     * @internal param $ {Bool} $objectify (optional) Returns an Object, instead of an associative array. default = false $objectify (optional) Returns an Object, instead of an associative array. default = false
+     * @return array|mixed {Array|Object}
      */
-    public static function array_map($input, $map, $objectify = FALSE) {
+    public static function array_clean($input, $map, $objectify = FALSE) {
         if (!is_array($input)) {
             $input = array();
         }
@@ -83,6 +93,11 @@ class Utils {
         $result = array();
 
         foreach ($map as $k => $v) {
+            $k = str_replace(' > ', '>', $k);
+            $k = explode('>', $k);
+            $targetKey = $k[count($k) - 1];
+            $k = $k[0];
+
             if (!isset($input[$k])) {
                 $value = NULL;
             }
@@ -259,7 +274,7 @@ class Utils {
                     }
                 }
 
-                $result[$k] = $value;
+                $result[$targetKey] = $value;
             }
         }
 
@@ -271,11 +286,23 @@ class Utils {
     }
 
     /**
+     * Alias for array_clean().
+     * Kept for legacy compatibility.
+     * @param $input
+     * @param $map
+     * @param bool $objectify
+     * @return array|mixed
+     */
+    public static function array_map($input, $map, $objectify = FALSE){
+        return self::array_clean($input, $map, $objectify);
+    }
+
+    /**
      * Will check if the given value is a mail address.
      * @param {String} $value
      * @return bool
      */
-    public static function is_mail($value){
+    public static function is_mail($value) {
         return (preg_match('/^([\+a-zA-Z0-9_.+-])+@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/', $value) !== 0);
     }
 
@@ -331,10 +358,15 @@ class Utils {
      * @param {String} $key The key to fetch from each array element.
      * @return {array} The found key values
      */
-    public static function array_pluck($array, $key){
+    public static function array_pluck($array, $key) {
         $result = array();
-        foreach($array as $v){
-            if(isset($v[$key])) $result[] = $v[$key]; else $result[] = NULL;
+        foreach ($array as $v) {
+            if (isset($v[$key])) {
+                $result[] = $v[$key];
+            }
+            else {
+                $result[] = NULL;
+            }
         }
         return $result;
     }
@@ -373,6 +405,34 @@ class Utils {
             return 0;
         });
         return $array;
+    }
+
+    /**
+     * Will cast a multi-dimensional array to a one-dimensional array by concatenating their keys.
+     * @param $array
+     * @param string $concat
+     * @param string $prepend
+     * @internal param $string [$concat="."] String to be used to concatenate the array keys.
+     * @return array
+     */
+    public static function array_flatten($array, $concat = '.', $prepend = '') {
+        $out = array();
+
+        foreach ($array as $k => $v) {
+            $inKey = $k;
+            if ($prepend) {
+                $inKey = $prepend . $concat . $k;
+            }
+
+            if (!is_array($v)) {
+                $out[$inKey] = $v;
+            }
+            else {
+                $out = array_merge($out, self::array_flatten($v, $concat, $inKey));
+            }
+        }
+
+        return $out;
     }
 
     /**
@@ -457,36 +517,314 @@ class Utils {
     /**
      * Takes a image path, crops (from center) and rescales the image so it fits into the new bounds,
      * then saves the new image in a temporary path that is then returned.
-     * @param {String} $inputImagePath
-     * @param {Integer} $targetWidth
-     * @param {Integer} $targetHeight
-     * @return {String} Temporary path to the cropped and resized image
+     * @param $inputImagePath
+     * @param $targetWidth
+     * @param $targetHeight
+     * @param [$alignTop=NULL] Set to true, to crop the image from top. Set to FALSE to crop from bottom. Default: NULL (center)
+     * @param [$targetFile=NULL] Set to a filename to write the image result into (will be JPG)
+     * @return string {String} Path to the cropped and resized image. If targetFile not given, this will be a temp path.
      */
-    function cropAndScale($inputImagePath, $targetWidth, $targetHeight) {
+    public static function cropAndScale($inputImagePath, $targetWidth, $targetHeight, $alignTop = NULL, $targetFile = NULL) {
         $origDims = getimagesize($inputImagePath);
 
         $sourceImage = imagecreatefromstring(file_get_contents($inputImagePath));
 
         $targetImage = imagecreatetruecolor($targetWidth, $targetHeight);
 
-        if ($origDims[0] > $origDims[1]) {
-            //Landscape format
-            $srcY = 0;
-            $srcH = $origDims[1];
-            $srcW = $srcH * ($targetWidth / $targetHeight);
-            $srcX = ($origDims[0] - $srcW) / 2;
+        $inputRatio = $origDims[0] / $origDims[1];
+        $outputRatio = $targetWidth / $targetHeight;
+
+        if ($inputRatio < $outputRatio) {
+            $scale = $targetWidth / $origDims[0];
         }
         else {
-            //Portrait or square
-            $srcX = 0;
-            $srcW = min($origDims[0], $origDims[0] * ($targetWidth / $targetHeight));
-            $srcH = $srcW * ($targetHeight / $targetWidth);
-            $srcY = ($origDims[1] - $srcH) / 2;
+            $scale = $targetHeight / $origDims[1];
         }
-        imagecopyresampled($targetImage, $sourceImage, 0, 0, $srcX, $srcY, $targetWidth, $targetHeight, $srcW, $srcH);
+
+        $projWidth = round($origDims[0] * $scale);
+        $projHeight = round($origDims[1] * $scale);
+
+        $cropX = $cropY = $cropW = $cropH = 0;
+
+        $diffW = $projWidth - $targetWidth;
+        $diffH = $projHeight - $targetHeight;
+
+        $cropX = ($diffW / 2) / $scale;
+        $cropY = ($diffH / 2) / $scale;
+        $cropW = ($projWidth - $diffW) / $scale;
+        $cropH = ($projHeight - $diffH) / $scale;
+
+        imagecopyresampled(
+                $targetImage,
+                $sourceImage,
+                0,
+                0,
+                $cropX, //srcX
+                $cropY, //srcY
+                $targetWidth, //dstW
+                $targetHeight, //dstH
+                $cropW,
+                $cropH
+        );
+
+        if (!$targetFile) {
+            $targetFile = tempnam(sys_get_temp_dir(), 'img');
+        }
+
+        imagejpeg($targetImage, $targetFile, 90);
+        return $targetFile;
+    }
+
+    /**
+     * Takes a image path and scales it so that no border exceeds the maximum given dimensions.
+     * @param $inputImagePath
+     * @param $targetWidth
+     * @param $targetHeight
+     * @return string
+     */
+    public static function scaleToMax($inputImagePath, $targetWidth, $targetHeight) {
+        $origDims = getimagesize($inputImagePath);
+
+        if ($origDims[0] <= $targetWidth && $origDims[1] <= $targetHeight) {
+            return $inputImagePath;
+        }
+
+        $sourceImage = imagecreatefromstring(file_get_contents($inputImagePath));
+
+        $targetImage = imagecreatetruecolor($targetWidth, $targetHeight);
+
+        $scale = min($targetHeight / $origDims[1], $targetWidth / $origDims[0]);
+
+        $targetWidth = $origDims[0] * $scale;
+        $targetHeight = $origDims[1] * $scale;
+
+        $targetImage = imagecreatetruecolor($targetWidth, $targetHeight);
+
+        imagecopyresampled($targetImage, $sourceImage, 0, 0, 0, 0, $targetWidth, $targetHeight, $origDims[0], $origDims[1]);
 
         $tmp = tempnam(sys_get_temp_dir(), 'img');
         imagejpeg($targetImage, $tmp, 90);
         return $tmp;
+    }
+
+    /**
+     * This returns the mimetype for a given filename.
+     * Heads up: This uses a very sloppy method by looking at the files extension. In most cases, thats fine.
+     * @param string $filename
+     * @return string
+     */
+    public static function getMimeType($filename) {
+        $ext = explode('.', $filename);
+        if (count($ext) >= 2) {
+            $ext = strtolower(array_pop($ext));
+        }
+        else {
+            return 'application/octet-stream';
+        }
+
+        $mimes = array(
+                'm4a' => 'audio/mp4',
+                'f4a' => 'audio/mp4',
+                'f4b' => 'audio/mp4',
+
+                'js' => 'text/javascript',
+                'json' => 'text/json',
+                'css' => 'text/css',
+                'html' => 'text/html',
+
+                'mp4' => 'video/mp4',
+                'm4v' => 'video/mp4',
+                'f4v' => 'video/mp4',
+                'f4p' => 'video/mp4',
+                'ogv' => 'video/ogg',
+                'webm' => 'video/webm',
+                'flv' => 'video/x-flv',
+
+                'woff' => 'application/font-woff',
+                'eot' => 'application/vnd.ms-fontobject',
+                'ttc' => 'application/x-font-ttf',
+                'ttf' => 'application/x-font-ttf',
+                'otf' => 'font/opentype',
+
+                'svg' => 'image/svg+xml',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                'ico' => 'image/x-icon'
+        );
+
+        if (isset($mimes[$ext])) {
+            return $mimes[$ext];
+        }
+        return 'application/octet-stream';
+    }
+
+    /**
+     * Performs a CURL based, simple HTTP get request and returns the response.
+     * @param string $url
+     * @return string
+     */
+    public static function httpGet($url) {
+        $c = curl_init();
+
+        curl_setopt($c, CURLOPT_URL, $url);
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($c, CURLOPT_HEADER, FALSE);
+        curl_setopt($c, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($c, CURLOPT_SSL_VERIFYHOST, 0);
+
+        $result = curl_exec($c);
+
+        return $result;
+    }
+
+    /**
+     * This is much like httpGet(), but will await a JSON formatted response that is automatically turned into a
+     * PHP associative array.
+     * @param string $url
+     * @return array|string|null
+     */
+    public static function getJSON($url) {
+        return json_decode(self::httpGet($url), TRUE);
+    }
+
+    /**
+     * Will remove a directory and all of its contents.
+     * Warning: Every file and folder inside the directory will be removed as well.
+     * @param string $dir
+     * @return bool
+     */
+    public static function rmdir($dir) {
+        if (substr($dir, -1) !== '/') {
+            $dir .= '/';
+        }
+
+        $files = scandir($dir);
+        array_shift($files);
+        array_shift($files);
+        foreach ($files as $f) {
+            if (is_dir($dir . $f)) {
+                self::rmdir($dir . $f);
+                continue;
+            }
+            unlink($dir . $f);
+        }
+
+        rmdir($dir);
+
+        return TRUE;
+    }
+
+    /**
+     * Just like the native mkdir() method, but can create multiple nested folders at once.
+     * @param $dir
+     */
+    public static function mkdir($dir) {
+        $dir = explode('/', $dir);
+
+        $scope = '';
+        foreach ($dir as $d) {
+            if (!$d) {
+                continue;
+            }
+
+            if ($scope) {
+                $scope .= '/';
+            }
+
+            $scope .= $d;
+
+            if (!file_exists($scope)) {
+                mkdir($scope);
+            }
+        }
+    }
+
+    /**
+     * Will copy files from one direction to another.
+     * Has the ability to copy whole folders as well.
+     * Heads up, filenames are kept!
+     * @param string $source Source file or folder
+     * @param string $dest Destination folder
+     * @return bool
+     */
+    public static function copy($source, $dest) {
+        if (substr($dest, -1) !== '/') {
+            $dest .= '/';
+        }
+
+        self::mkdir($dest);
+
+        if (is_file($source)) {
+            copy($source, $dest . basename($source));
+            return;
+        }
+
+        if (is_dir($source)) {
+            if (substr($source, -1) !== '/') {
+                $source .= '/';
+            }
+
+            $tmp = explode('/', $source);
+            $dest .= $tmp[count($tmp) - 2] . '/';
+
+            self::mkdir($dest);
+
+            $files = scandir($source);
+            array_shift($files);
+            array_shift($files);
+            foreach ($files as $f) {
+                if (is_dir($source . $f)) {
+                    self::copy($source . $f, $dest);
+                    continue;
+                }
+                copy($source . $f, $dest . $f);
+            }
+        }
+
+        return TRUE;
+    }
+
+    /**
+     * Will zip-compress a given folder and all files and sub-folders inside it into a temporarily created ZIP file
+     * and returns the path to the zip file for further processing.
+     * @param string $dir
+     * @param null [$zip] Will be used by the method itself.
+     * @return string
+     */
+    public static function zipFolder($dir, $inZip = NULL) {
+        if (substr($dir, -1) !== '/') {
+            $dir .= '/';
+        }
+
+        if ($inZip) {
+            $zip = $inZip;
+            $zipFilename = '';
+        }
+        else {
+            $zip = new \ZipArchive();
+            $zipFilename = tempnam(sys_get_temp_dir(), 'zipfile');
+            $zip->open($zipFilename, \ZipArchive::CREATE);
+        }
+
+        $files = scandir($dir);
+        array_shift($files);
+        array_shift($files);
+        foreach ($files as $f) {
+            if (is_file($dir . $f)) {
+                $zip->addFile($dir . $f);
+            }
+            else {
+                self::zipFolder($dir . $f, $zip);
+            }
+        }
+
+        if (!$inZip) {
+            $zip->close();
+        }
+
+        return $zipFilename;
     }
 }

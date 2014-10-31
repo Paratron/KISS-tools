@@ -22,6 +22,12 @@ class MySQLi extends \mysqli {
      */
     public $prefix = 'tbl_';
 
+    /**
+     * Set this to TRUE, if the class should throw MySQL errors.
+     * @var bool
+     */
+    public $throwErrors = FALSE;
+
     private $logging = FALSE;
 
     /**
@@ -88,7 +94,7 @@ class MySQLi extends \mysqli {
     /**
      * Replaces " $$" with the table prefix.
      * @param $string
-     * @return void
+     * @return string
      */
     private function putPrefix($string) {
         return str_replace(' $$', ' ' . $this->prefix, $string);
@@ -117,6 +123,9 @@ class MySQLi extends \mysqli {
         $this->last_query = $sqlQuery;
         $result = parent::query($sqlQuery);
         $this->logSQL($sqlQuery);
+        if($this->error && $this->throwErrors){
+            throw new \ErrorException('ERROR: ' . $this->error . ' ON QUERY: ' . $sqlQuery, $this->errno);
+        }
         return $result;
     }
 
@@ -154,9 +163,7 @@ class MySQLi extends \mysqli {
         if (!$this->error) {
             return $this->insert_id;
         }
-        else {
-            return false;
-        }
+        return false;
     }
 
     /**
@@ -286,7 +293,7 @@ class MySQLi extends \mysqli {
             foreach ($array as $v) {
                 $obj = array();
                 foreach ($keys as $k) {
-                    $obj[] = (isset($v[$k])) ? (is_numeric($v[$k])) ? $v[$k] + 0 : $this->escape($v[$k]) : $this->escape('');
+                    $obj[] = (isset($v[$k])) ? (is_int($v[$k])) ? $v[$k] + 0 : $this->escape($v[$k]) : $this->escape('');
                 }
                 $objects[] = implode(', ', $obj);
             }
@@ -294,7 +301,7 @@ class MySQLi extends \mysqli {
         else {
             $obj = array();
             foreach ($keys as $k) {
-                $obj[] = (is_numeric($array[$k])) ? $array[$k] + 0 : $this->escape($array[$k]);
+                $obj[] = (is_int($array[$k])) ? $array[$k] + 0 : $this->escape($array[$k]);
             }
             $objects[] = implode(', ', $obj);
         }

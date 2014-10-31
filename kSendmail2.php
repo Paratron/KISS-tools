@@ -1,32 +1,25 @@
 <?php
 /**
- * Kiss Mail
+ * kSendMail
  * =========
  * Class to send E-Mails in UTF8-Charset with PHP.
  * New in Version 1.3: Optional sending via an SMTP Server. - Depends on PEAR::Mail
  * New in Version 1.4: 8bit encoding is applied without imap_8bit().
  * New in Version 2: Complete rewrite of the class + better support of SMTP + unit tests
- * New in Version 3: Ported to the Kiss namespace, method names rewritten to camelCase.
  * @author Christian Engel <hello@wearekiss.com>
- * @version 3 Apr 6th, 2013
+ * @version 2 Dec 16th, 2012
+ *
  */
-
-namespace Kiss;
-
-class Mail {
-    private $sendSeparate = TRUE;
-    private $htmlMode = FALSE;
-    private $smtpData = NULL;
+class kSendmail {
+    private $send_separate = TRUE;
+    private $html_mode = FALSE;
+    private $smtp_data = NULL;
     private $sender = '';
     private $receivers = array();
     private $bcc = array();
     private $cc = array();
     private $attachments = array();
     private $report = '';
-    private $phpProxyURL = '';
-    private $phpProxyAuth = '';
-    private $phpProxyTempFile = '';
-    private $phpProxyTempURL = '';
 
     /**
      * Will test for a correct mail address.
@@ -34,42 +27,28 @@ class Mail {
      * @param {String} $email
      * @return {String}
      */
-    function checkEmail($email) {
+    function check_email($email) {
         if (preg_match('/^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-+])+\.)+([a-zA-Z0-9]{2,4})+$/', $email)) {
             return $email;
         }
         return '';
     }
 
-    function __constructor($sendAddress = '') {
-        if ($sendAddress) {
-            $this->setSender($sendAddress);
+    function __constructor($send_address = '') {
+        if ($send_address) {
+            $this->set_sender($send_address);
         }
     }
 
-    function setSender($sendAddress) {
-        if (!$this->checkEmail($sendAddress)) {
-            throw new \ErrorException('This is not an E-Mail: ' . $sendAddress);
+    function set_sender($send_address) {
+        if (!$this->check_email($send_address)) {
+            throw new Exception('This is not an E-Mail: ' . $send_address);
         }
-        $this->sender = $sendAddress;
+        $this->sender = $send_address;
     }
 
-    function getSender() {
+    function get_sender() {
         return $this->sender;
-    }
-
-    /**
-     * Will set the Class to use a PHP proxy script to deliver the mails from another server.
-     * You can use this when the default send method and the STMP method fails.
-     *
-     * HEADS UP! This mode supports only ONE receiver, no CC, no BCC and no attachments!
-     *           Keep your messages short since they are sent via gzipped and base64 encoded GET parameters.
-     * @param $url
-     * @param $auth
-     */
-    function setProxy($url, $auth){
-        $this->phpProxyURL = $url;
-        $this->phpProxyAuth = $auth;
     }
 
     /**
@@ -79,7 +58,7 @@ class Mail {
      * @param {String} $username Your SMTP username
      * @param {String} $password Your user password
      */
-    function setSmtp($host, $username, $password) {
+    function set_smtp($host, $username, $password) {
         $parts = explode(':', $host);
         $port = 25;
         if (substr($host, 0, 6) == 'ssl://' || substr($host, 0, 6) == 'tls://') {
@@ -95,7 +74,7 @@ class Mail {
         }
         $host = implode(':', $parts);
 
-        $this->smtpData = array(
+        $this->smtp_data = array(
             'host' => $host,
             'port' => $port,
             'user' => $username,
@@ -103,8 +82,8 @@ class Mail {
         );
     }
 
-    function getSmtp() {
-        return $this->smtpData;
+    function get_smtp() {
+        return $this->smtp_data;
     }
 
     /**
@@ -112,14 +91,14 @@ class Mail {
      * @param {String} $mail
      * @throws Exception
      */
-    function addReceiver($mail) {
-        if (!$this->checkEmail($mail)) {
-            throw new \ErrorException('This is not an E-Mail: ' . $mail);
+    function add_receiver($mail) {
+        if (!$this->check_email($mail)) {
+            throw new Exception('This is not an E-Mail: ' . $mail);
         }
         $this->receivers[] = $mail;
     }
 
-    function getReceivers() {
+    function get_receivers() {
         return $this->receivers;
 
     }
@@ -129,14 +108,14 @@ class Mail {
      * @param $mail
      * @throws Exception
      */
-    function addCc($mail) {
-        if (!$this->checkEmail($mail)) {
-            throw new \ErrorException('This is not an E-Mail: ' . $mail);
+    function add_cc($mail) {
+        if (!$this->check_email($mail)) {
+            throw new Exception('This is not an E-Mail: ' . $mail);
         }
         $this->cc[] = $mail;
     }
 
-    function getCc() {
+    function get_cc() {
         return $this->cc;
     }
 
@@ -145,48 +124,48 @@ class Mail {
      * @param $mail
      * @throws Exception
      */
-    function addBcc($mail) {
-        if (!$this->checkEmail($mail)) {
-            throw new \ErrorException('This is not an E-Mail: ' . $mail);
+    function add_bcc($mail) {
+        if (!$this->check_email($mail)) {
+            throw new Exception('This is not an E-Mail: ' . $mail);
         }
         $this->bcc[] = $mail;
     }
 
-    function getBcc() {
+    function get_bcc() {
         return $this->bcc;
     }
 
     /**
      * This will flush all normal, cc and bcc-receiver lists.
      */
-    function clearReceivers() {
+    function clear_receivers() {
         $this->receivers = $this->cc = $this->bcc = array();
     }
 
     /**
      * Will add a file as a attachment. Checks if the file exists and will throw an error otherwise.
-     * @param {String} $sourceFilename
-     * @param {String}  $targetFilename (optional) New filename inside the E-Mail
+     * @param {String} $source_filename
+     * @param {String}  $target_filename (optional) New filename inside the E-Mail
      * @return bool
      * @throws Exception
      */
-    function addAttachment($sourceFilename, $targetFilename = NULL) {
-        if (file_exists($sourceFilename)) {
-            if (!$targetFilename) {
-                $targetFilename = basename($sourceFilename);
+    function add_attachment($source_filename, $target_filename = NULL) {
+        if (file_exists($source_filename)) {
+            if (!$target_filename) {
+                $target_filename = basename($source_filename);
             }
             $this->attachments[] = array(
-                $sourceFilename,
-                $targetFilename
+                $source_filename,
+                $target_filename
             );
             return true;
         }
         else {
-            throw new \ErrorException('File not found: ' . $sourceFilename);
+            throw new Exception('File not found: ' . $source_filename);
         }
     }
 
-    function clearAttachments() {
+    function clear_attachments() {
         $this->attachments = array();
     }
 
@@ -200,8 +179,8 @@ class Mail {
      * By default, E-Mails are sent separately.
      * @param {Bool} $yesNo
      */
-    function setModeSeparate($yesNo) {
-        $this->sendSeparate = $yesNo;
+    function set_mode_separate($yesNo) {
+        $this->send_separate = $yesNo;
     }
 
     /**
@@ -210,8 +189,8 @@ class Mail {
      * By default, E-Mails are sent in text mode.
      * @param {Bool} $yesNo
      */
-    function setModeHtml($yesNo) {
-        $this->htmlMode = $yesNo;
+    function set_mode_html($yesNo) {
+        $this->html_mode = $yesNo;
     }
 
     /**
@@ -223,61 +202,57 @@ class Mail {
      */
     function send($subject, $body) {
         if (!$this->sender) {
-            throw new \ErrorException('No sender defined');
+            throw new Exception('No sender defined');
         }
 
         if (!count($this->receivers)) {
-            throw new \ErrorException('No receivers defined');
+            throw new Exception('No receivers defined');
         }
 
         //No SMTP data set? Send in normal mode.
-        if ($this->smtpData === NULL) {
-            //PHP Proxy set? Send through it!
-            if($this->phpProxyURL){
-                return $this->sendProxied($this->receivers, $subject, $body);
-            }
-            if ($this->sendSeparate) {
+        if ($this->smtp_data === NULL) {
+            if ($this->send_separate) {
                 $cnt = 0;
                 foreach ($this->receivers as $receiver) {
                     if (!$cnt) {
-                        $this->sendNormal(array($receiver), $this->cc, $this->bcc, $this->attachments, $subject, $body);
+                        $this->send_normal(array($receiver), $this->cc, $this->bcc, $this->attachments, $subject, $body);
                     }
                     else {
-                        $this->sendNormal(array($receiver), array(), array(), $this->attachments, $subject, $body);
+                        $this->send_normal(array($receiver), array(), array(), $this->attachments, $subject, $body);
                     }
                     $cnt++;
                 }
             }
             else {
-                $this->sendNormal($this->receivers, $this->cc, $this->bcc, $this->attachments, $subject, $body);
+                $this->send_normal($this->receivers, $this->cc, $this->bcc, $this->attachments, $subject, $body);
             }
         }
         else {
             //SMTP Data set, send through SMTP function.
-            if ($this->sendSeparate) {
+            if ($this->send_separate) {
                 $cnt = 0;
                 foreach ($this->receivers as $receiver) {
                     if (!$cnt) {
-                        $this->sendSmtp(array($receiver), $this->cc, $this->bcc, $this->attachments, $subject, $body);
+                        $this->send_smtp(array($receiver), $this->cc, $this->bcc, $this->attachments, $subject, $body);
                     }
                     else {
-                        $this->sendSmtp(array($receiver), array(), array(), $this->attachments, $subject, $body);
+                        $this->send_smtp(array($receiver), array(), array(), $this->attachments, $subject, $body);
                     }
                     $cnt++;
                 }
             }
             else {
-                $this->sendSmtp($this->receivers, $this->cc, $this->bcc, $this->attachments, $subject, $body);
+                $this->send_smtp($this->receivers, $this->cc, $this->bcc, $this->attachments, $subject, $body);
             }
         }
     }
 
-    private function sendNormal(array $rec, array $cc, array $bcc, array $attch, $subject, $body) {
+    private function send_normal(array $rec, array $cc, array $bcc, array $attch, $subject, $body) {
         $headers = array();
         $headers['MIME-Version'] = '1.0';
-        $headers['Content-Type'] = 'text/' . ($this->htmlMode ? 'html' : 'plain') . '; charset="UTF-8"';
+        $headers['Content-Type'] = 'text/' . ($this->html_mode ? 'html' : 'plain') . '; charset="UTF-8"';
         $headers['Content-Transfer-Encoding'] = '8bit';
-        $headers['Date'] = date('r');
+        $headers['Date'] = date('c');
         $headers['From'] = $this->sender;
         if (count($cc)) {
             $headers['Cc'] = implode(',', $cc);
@@ -294,41 +269,25 @@ class Mail {
         $body = $this->setAttachments() . $body;
 
         foreach ($rec as $r) {
-            mail($r, '=?UTF-8?Q?' . $this->quotedPrintableEncode($subject) . '?=', $body, $header);
+            mail($r, '=?UTF-8?Q?' . $this->quoted_printable_encode($subject) . '?=', $body, $header);
         }
     }
 
-    private function sendProxied(array $rec, $subject, $body){
-        $dta = array($this->phpProxyAuth, $this->sender, $rec[0], $subject, $body);
-        $dta = json_encode($dta);
-        $dta = gzcompress($dta);
-        if(!$this->phpProxyTempFile){
-            $dta = base64_encode($dta);
-            $url = $this->phpProxyURL . '?' . $dta;
-            file_get_contents($url);
-            return;
-        }
-
-        file_put_contents($this->phpProxyTempFile, $dta);
-        $url = $this->phpProxyURL . '?hook=' . $this->phpProxyTempURL;
-        file_get_contents($url);
-    }
-
-    private function sendSmtp(array $rec, array $cc, array $bcc, array $attch, $subject, $body) {
+    private function send_smtp(array $rec, array $cc, array $bcc, array $attch, $subject, $body) {
         $eol = "\r\n";
         $errno = NULL;
         $errstr = '';
         $log = array();
 
-        $s = fsockopen($this->smtpData['host'], $this->smtpData['port'], $errno, $errstr);
+        $s = fsockopen($this->smtp_data['host'], $this->smtp_data['port'], $errno, $errstr);
         if ($s === FALSE) {
-            throw new \ErrorException($errstr, $errno);
+            throw new Exception($errstr, $errno);
         }
 
         $r = fgets($s);
         $log[] = '< ' . $r;
-        fputs($s, 'EHLO KissMail' . $eol);
-        $log[] = '> EHLO KissMail';
+        fputs($s, 'EHLO kSendmail2' . $eol);
+        $log[] = '> EHLO kSendmail2';
 
         while ($r = @fgets($s)) {
             $log[] = '< ' . $r;
@@ -342,50 +301,50 @@ class Mail {
         $r = fgets($s);
         $log[] = '< ' . $r;
         if (substr($r, 0, 3) != '334') {
-            throw new \ErrorException('Unexpected Response: ' . $r);
+            throw new Exception('Unexpected Response: ' . $r);
         }
-        fputs($s, base64_encode($this->smtpData['user']) . $eol);
-        $log[] = '> ' . base64_encode($this->smtpData['user']);
+        fputs($s, base64_encode($this->smtp_data['user']) . $eol);
+        $log[] = '> ' . base64_encode($this->smtp_data['user']);
         $r = fgets($s);
         $log[] = '< ' . $r;
         if (substr($r, 0, 3) != '334') {
-            throw new \ErrorException('Unexpected Response: ' . $r);
+            throw new Exception('Unexpected Response: ' . $r);
         }
-        fputs($s, base64_encode($this->smtpData['password']) . $eol);
-        $log[] = '> ' . base64_encode($this->smtpData['password']);
+        fputs($s, base64_encode($this->smtp_data['password']) . $eol);
+        $log[] = '> ' . base64_encode($this->smtp_data['password']);
         $r = fgets($s);
         $log[] = '< ' . $r;
         if (substr($r, 0, 3) != '235') {
             print_r($log);
-            throw new \ErrorException('Login failed.');
+            throw new Exception('Login failed.');
         }
 
         fputs($s, 'MAIL FROM: <' . $this->sender . '>' . $eol);
         $r = fgets($s);
         if (substr($r, 0, 3) != '250') {
-            throw new \ErrorException('Unexpected Response: ' . $r);
+            throw new Exception('Unexpected Response: ' . $r);
         }
 
         foreach (array_merge($rec, $cc, $bcc) as $r) {
             fputs($s, 'RCPT TO:<' . $r . '>' . $eol);
             $r = fgets($s);
             if (substr($r, 0, 3) != '250') {
-                throw new \ErrorException('Unexpected Response: ' . $r);
+                throw new Exception('Unexpected Response: ' . $r);
             }
         }
 
         fputs($s, 'DATA' . $eol);
         $r = fgets($s);
         if (substr($r, 0, 3) != '354') {
-            throw new \ErrorException('Unexpected Response: ' . $r);
+            throw new Exception('Unexpected Response: ' . $r);
         }
 
         //Build the mail headers.
         $headers = array();
         $headers['MIME-Version'] = '1.0';
-        $headers['Content-Type'] = 'text/' . ($this->htmlMode ? 'html' : 'plain') . '; charset="UTF-8"';
+        $headers['Content-Type'] = 'text/' . ($this->html_mode ? 'html' : 'plain') . '; charset="UTF-8"';
         $headers['Content-Transfer-Encoding'] = '8bit';
-        $headers['Date'] = date('r');
+        $headers['Date'] = date('D, j M Y G:i:s');
         $headers['From'] = $this->sender;
         $headers['To'] = implode(',', $rec);
         if (count($cc)) {
@@ -395,7 +354,7 @@ class Mail {
             $headers['Bcc'] = implode(',', $bcc);
         }
 
-        $headers['Subject'] = '=?UTF-8?Q?' . $this->quotedPrintableEncode($subject) . '?=';
+        $headers['Subject'] = '=?UTF-8?Q?' . $this->quoted_printable_encode($subject) . '?=';
 
         $header = '';
         foreach ($headers as $k => $v) {
@@ -411,7 +370,7 @@ class Mail {
 
         $r = fgets($s);
         if (substr($r, 0, 3) != '250') {
-            throw new \ErrorException('Unexpected Response: ' . $r);
+            throw new Exception('Unexpected Response: ' . $r);
         }
         fputs($s, 'QUIT');
         fclose($s);
@@ -442,7 +401,7 @@ class Mail {
      * @param {Bool} $bEmulate_imap_8bit [optional]
      * @return {String}
      */
-    private function quotedPrintableEncode($sText, $bEmulate_imap_8bit = true) {
+    private function quoted_printable_encode($sText, $bEmulate_imap_8bit = true) {
         // split text into lines
         $aLines = explode(chr(13) . chr(10), $sText);
 

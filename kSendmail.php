@@ -43,6 +43,11 @@ class kSendmail
      * @var Should a short report be printed out after each sent mail?
      */
     private $varShowReport = false;
+
+    /**
+    * @var Contains the report after a mail has been sent.
+    */
+    public $report = '';
     
     /**
      * Constructor
@@ -53,6 +58,8 @@ class kSendmail
     {
         $this->setSender($send_address);
     }
+
+    private $smtp = array();
     
     /**
      * Activates SMTP transfer.
@@ -62,16 +69,36 @@ class kSendmail
      */
     function useSMTP($host, $username, $password)
     {
-        try
-        {
-            require_once ("Mail.php");
-            $this->smtpObject = Mail::factory('smtp', array('host'=>$host, 'auth'=>true, 'username'=>$username, 'password'=>$password));
-        }
-        catch(Exception $e)
-        {
-            echo "<b>ERROR:</b> Cannot create instance of PEAR::Mail";
-            $this->smtpObject = null;
-        }
+        $this->smtp = array(
+            'host' => $host,
+            'user' => base64_encode($username),
+            'pass' => base64_encode($password)
+        );
+    }
+
+    function smtp_send($from, $to, $subject, $body){
+        $talk = array();
+        if ($s = fsockopen ($this->smtp['host'], 25)){
+            fputs ($s, "EHLO ".$this->smtp['host']."\r\n"); 
+            $talk["hello"] = fgets ( $s, 1024 ); 
+            fputs($s, "auth login\r\n");
+            $talk["res"]=fgets($s,1024);
+            fputs($s, $this->smtp['user']."\r\n");
+            $talk["user"]=fgets($s,1024);
+            fputs($s, $this->smtp['pass']."\r\n");
+            $talk["pass"]=fgets($s,256);
+            fputs ($s, "MAIL FROM: <".$from.">\r\n"); 
+            $talk["From"] = fgets ( $s, 1024 ); 
+            fputs ($s, "RCPT TO: <".$to.">\r\n"); 
+            $talk["To"] = fgets ($s, 1024); 
+            fputs($s, "DATA\r\n");
+            $talk["data"]=fgets( $s,1024 );
+            fputs($s, "To: <".$to.">\r\nFrom: <".$from.">\r\nSubject:".$subject."\r\n\r\n\r\n".$body."\r\n.\r\n");
+            $talk["send"]=fgets($s,256);
+            //CLOSE CONNECTION AND EXIT ... 
+            fputs ($s, "QUIT\r\n"); 
+            fclose($s); 
+        } 
     }
     
     /**
@@ -185,14 +212,10 @@ class kSendmail
                     $headers["Content-Type"] = "text/$type; charset=\"UTF-8\"";
                     $headers["Content-Transfer-Encoding"] = "8bit";
                     $totalText = $this->setAttachments().$text;
-                    if ($this->smtpObject)
+                    if ($this->smtp['host'])
                     {
                         $headers["Subject"] = "=?UTF-8?Q?".$this->quoted_printable_encode($subject)."?=";
-                        $mail = $this->smtpObject->send($r, $headers, $totalText);
-                        if ($this->varShowReport && PEAR::isError($mail))
-                        {
-                            echo "<b>SMTP-Error:</b> ".$mail->getMessage();
-                        }
+                        $this->smtp_send($this->sender, $r, $headers, $totalText);
                     }
                     else
                     {
@@ -203,8 +226,9 @@ class kSendmail
                         $header .= "\r\n";
                         mail($r, "=?UTF-8?Q?".$this->quoted_printable_encode($subject)."?=", $totalText, $header);
                     }
+                    $this->report = "Report: <br />".$r."<br />".$subject."<br />".$text."<br />".$header."<br />".count($this->attachments)." Attachments.";
                     if ($this->varShowReport)
-                        echo "Report: <br />".$r."<br />".$subject."<br />".$text."<br />".$header."<br />".count($this->attachments)." Attachments.";
+                        echo $this->report;
                 }
             }
             else
@@ -229,9 +253,10 @@ class kSendmail
                 {
                     $headers["Subject"] = "=?UTF-8?Q?".$this->quoted_printable_encode($subject)."?=";
                     $mail = $this->smtpObject->send($r, $headers, $totalText);
-                    if ($this->varShowReport && PEAR::isError($mail))
+                    if (PEAR::isError($mail))
                     {
-                        echo "<b>SMTP-Error:</b> ".$mail->getMessage();
+                        $this->report = "<b>SMTP-Error:</b> ".$mail->getMessage();
+                        if($this->varShowReport) echo $this->report;
                     }
                 }
                 else
@@ -244,8 +269,9 @@ class kSendmail
                     mail($r, "=?UTF-8?Q?".$this->quoted_printable_encode($subject)."?=", $totalText, $header);
                 }
                 
+                $this->report = "Report: <br />".$r."<br />".$subject."<br />".$text."<br />".$header."<br />".count($this->attachments)." Anhänge.";
                 if ($this->varShowReport)
-                    echo "Report: <br />".$r."<br />".$subject."<br />".$text."<br />".$header."<br />".count($this->attachments)." Anhänge.";
+                    echo $this->report;
             }
             
             return true;

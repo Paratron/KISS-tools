@@ -381,4 +381,36 @@ class kUtils {
 
         return $salt . hash('sha256', $salt . $password);
     }
+
+    /**
+     * Converts a decimal number into any other number system.
+     * Provide $base = 16 to convert to hexadecimal.
+     * Provide $base = 8 to convert to octal.
+     * Provide $base = 2 to convert to binary.
+     * @param int $decimal
+     * @param int $base [optional] Default = 62
+     * @return string
+     */
+    function dec2else($decimal, $base = 62){
+        if($base > 62) $base = 62;
+        if($base < 2) $base = 2;
+        $uber_chars = substr('0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z', 0, 1+(($base-1)*2));
+        $uber_chars = explode(',', $uber_chars);
+        $uber_length = count($uber_chars);
+
+        $result = array();
+        $result_str = '';
+
+        if($decimal == 0) return '0';
+
+        while($decimal > 0){
+            $result[] = $uber_chars[$decimal % $uber_length];
+            $decimal = floor($decimal / $uber_length);
+        }
+
+        $result = array_reverse($result);
+        $result_str = implode('', $result);
+
+        return $result_str;
+    }   
 }
