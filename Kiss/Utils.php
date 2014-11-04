@@ -452,9 +452,14 @@ class Utils {
      * @return {String}
      */
     public static function template($template_string, $template_data = array()) {
+        if(substr($template_string, 0, 7) === '@file::'){
+            $template_string = file_get_contents(substr($template_string, 7));
+        }
 
         foreach ($template_data as $k => $v) {
-            $template_string = str_replace('{{' . $k . '}}', $v, $template_string);
+            if(is_string($v)){
+                $template_string = str_replace(array('{{' . $k . '}}', '{{ ' . $k . ' }}'), $v, $template_string);
+            }
         }
 
         //Remove all missing tags from the template.
@@ -830,5 +835,26 @@ class Utils {
         }
 
         return $zipFilename;
+    }
+
+    /**
+     * In order to savely output previously submitted userdata into a form, you must stay secure
+     * that its impossible to break out of the value string and insert any JS code into the page.
+     * This is achieved by escaping a couple of characters.
+     *
+     * Important: Always put quotes around your value properties!
+     * @param {string|array} $values
+     * @return mixed
+     */
+    public static function fixFormValues($values){
+        if(is_string($values)){
+            return str_replace(array('"', "'", '<', '>'), array('&quot;', '&#39;', '&lt;', '&gt;'), $values);
+        }
+
+        foreach($values as $k => $v){
+            $values[$k] = str_replace(array('"', "'", '<', '>'), array('&quot;', '&#39;', '&lt;', '&gt;'), $v);
+        }
+
+        return $values;
     }
 }
