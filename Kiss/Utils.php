@@ -307,7 +307,7 @@ class Utils {
     }
 
     public static function is_url($value) {
-        return (preg_match('/(http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:\/~\+#]*[\w\-\@?^=%&amp;\/~\+#])?/', $value) === 0);
+        return (preg_match('/(http|ftp|https):\/\/[\w\-_]+[\w\-_]+(\.[\w\-_]+)*([\w\-\.,@?^=%&amp;:\/~\+#]*[\w\-\@?^=%&amp;\/~\+#])?/', $value) === 0);
     }
 
     /**
@@ -856,5 +856,26 @@ class Utils {
         }
 
         return $values;
+    }
+
+    /**
+     * This method takes a base64 encoded image string - for example
+     * returned from the HTML5 canvas toDataURL() method and converts
+     * it into a image file.
+     * The temporary path of the image is returned.
+     * @param {string} $base64Data
+     * @throws \ErrorException
+     * @return string Path to the temporary image
+     */
+    public static function decodeBase64Image($base64Data){
+        $tempnam = tempnam('', '');
+
+        if(substr($base64Data, 0, 22) !== 'data:image/png;base64,'){
+            throw new \ErrorException('Malformed base64 string. Image header missing.');
+        }
+
+        file_put_contents($tempnam, base64_decode(substr($base64Data, 22)));
+
+        return $tempnam;
     }
 }
