@@ -307,7 +307,7 @@ class Utils {
     }
 
     public static function is_url($value) {
-        return (preg_match('/(http|ftp|https):\/\/[\w\-_]+[\w\-_]+(\.[\w\-_]+)*([\w\-\.,@?^=%&amp;:\/~\+#]*[\w\-\@?^=%&amp;\/~\+#])?/', $value) === 0);
+        return (preg_match('/(http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)*([\w\-\.,@?^=%&amp;:\/~\+#]*[\w\-\@?^=%&amp;\/~\+#])?/', $value) === 0);
     }
 
     /**
