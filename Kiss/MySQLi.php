@@ -2,7 +2,7 @@
 /**
  * Extends the MySQLi class with useful functions.
  * @author Christian Engel <hello@wearekiss.com>
- * @version 1.6
+ * @version 1.7
  */
 
 namespace Kiss;
@@ -66,6 +66,16 @@ class MySQLi extends \mysqli {
             $this->connected = TRUE;
         }
         $this->prefix = $prefix;
+    }
+
+    function enableLogging($logFile, $clean = FALSE){
+        if($clean && file_exists($logFile)){
+            unlink($logFile);
+        }
+        $this->logging = fopen($logFile, 'a');
+        if($this->logging){
+            fwrite($this->logging, 'REQUEST:' . "\n" . $_SERVER['REQUEST_METHOD'] . ' ' . $_SERVER['REQUEST_URI'] . "\n\n");
+        }
     }
 
     private function logSQL($sql) {
