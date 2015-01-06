@@ -1,7 +1,7 @@
 <?php
 /**
  * Essencial Twitter functions
- * @autor Christian Engel <christian.engel@wearekiss.com>
+ * @autor Christian Engel <hello@wearekiss.com>
  * @version 1 16.10.2011
  */
 class kTwitter {
